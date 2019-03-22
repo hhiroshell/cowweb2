@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cowweb-mysql-configmap
+  namespace: cowweb
+data:
+  cowweb-mysql.cnf: |
+    [mysqld]
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+  cowweb-mysql-init.sql: |
+    DROP DATABASE IF EXISTS COWWEB;
+    CREATE DATABASE COWWEB;
+    USE COWWEB;
+    CREATE TABLE `QA` (
+      `Q`   VARCHAR(36) NOT NULL PRIMARY KEY,
+      `A`   TEXT
+    );
+    INSERT INTO `QA` (`Q`, `A`) VALUES ('age', '18');
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cowweb-mysql
+  namespace: cowweb
+  labels:
+    app: cowweb-mysql
+spec:
+  ports:
+    - port: 3306
+  clusterIP: None
+  selector:
+    app: cowweb-mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cowweb-mysql
+  namespace: cowweb
+spec:
+  selector:
+    matchLabels:
+      app: cowweb-mysql
+  serviceName: cowweb-mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cowweb-mysql
+    spec:
+      initContainers:
+        - name: configure-mysql
+          image: busybox:1
+          command: ['/bin/sh', '-c']
+          args: ['cp /mnt/configmap/cowweb-mysql.cnf /mnt/conf.d/']
+          volumeMounts:
+            - name: conf
+              mountPath: /mnt/conf.d
+            - name: cowweb-mysql-configmap
+              mountPath: /mnt/configmap
+      containers:
+        - name: cowweb-mysql
+          image: mysql:8.0.15
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cowweb-mysql-secret
+                  key: DB_PASSWORD
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+      volumes:
+        - name: conf
+          emptyDir: {}
+        - name: cowweb-mysql-configmap
+          configMap:
+            name: cowweb-mysql-configmap
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cowweb-mysqldb-init
+  namespace: cowweb
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-cowweb-mysql
+          image: mysql:8.0.15
+          command: ['/bin/sh', '-c']
+          args: ['until mysqladmin ping -h$DB_URL -P$DB_PORT -u$DB_USER -p$DB_PASSWORD; do echo waiting for mysqldb; sleep 2; done;']
+          envFrom:
+            - secretRef:
+                name: cowweb-mysql-secret
+      containers:
+        - name: cowweb-mysql-init
+          image: mysql:8.0.15
+          command: ["/bin/sh", "-c"]
+          args: ['mysql -h$DB_URL -P$DB_PORT -u$DB_USER -p$DB_PASSWORD < /mnt/configmap/cowweb-mysql-init.sql;']
+          volumeMounts:
+            - name: cowweb-mysql-configmap
+              mountPath: /mnt/configmap
+          envFrom:
+            - secretRef:
+                name: cowweb-mysql-secret
+      volumes:
+        - name: cowweb-mysql-configmap
+          configMap:
+            name: cowweb-mysql-configmap
+      restartPolicy: Never
+  backoffLimit: 4
