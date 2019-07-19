@@ -14,7 +14,19 @@
 # limitations under the License.
 #
 
-FROM openjdk:11-jre-slim
+# --- Build a custom JRE ---
+FROM openjdk:11-jdk-slim AS jre-builder
+
+WORKDIR /jlink
+RUN jlink --output ${project.artifactId}-jre \
+          --add-modules java.base,java.desktop,java.logging,java.management
+
+# --- Build an application container ---
+FROM debian:buster-slim
+
+WORKDIR /workdir
+COPY --from=jre-builder /jlink/${project.artifactId}-jre /opt/${project.artifactId}-jre
+ENV PATH /opt/${project.artifactId}-jre/bin:$PATH
 
 RUN mkdir /app
 COPY libs /app/libs
