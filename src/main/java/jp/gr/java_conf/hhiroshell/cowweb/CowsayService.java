@@ -22,70 +22,43 @@ import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
 import io.helidon.webserver.ServerResponse;
 import io.helidon.webserver.Service;
-import jp.gr.java_conf.hhiroshell.cowweb.model.*;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 
-import java.sql.SQLException;
 import java.util.*;
 
 public class CowsayService implements Service {
 
     private final MetricRegistry registry = RegistryFactory.getRegistryFactory().get()
             .getRegistry(MetricRegistry.Type.APPLICATION);
+
     private final Counter accessCounter = registry.counter("access_counter");
 
     private static final String br = System.getProperty("line.separator");
 
     private static final List<String> cowfiles;
+
     static {
-//        cowfiles = Arrays.asList(new String[]{"default"});
-        List<String> infelicities = Arrays.asList(new String[]{"head-in", "telebears", "sodomized"});
-        List<String> c = new ArrayList<>();
-        Arrays.stream(Cowsay.say(new String[]{"-l"}).split(br)).forEach(f -> {
-            if (!infelicities.contains(f)) {
-                c.add(f);
-            }
-        });
-        cowfiles = Collections.unmodifiableList(c);
+        cowfiles = Arrays.asList(new String[]{"default"});
+//        List<String> infelicities = Arrays.asList(new String[]{"head-in", "telebears", "sodomized"});
+//        List<String> c = new ArrayList<>();
+//        Arrays.stream(Cowsay.say(new String[]{"-l"}).split(br)).forEach(f -> {
+//            if (!infelicities.contains(f)) {
+//                c.add(f);
+//            }
+//        });
+//        cowfiles = Collections.unmodifiableList(c);
     }
 
     @Override
     public void update(Routing.Rules rules) {
         rules.get("/", this::say);
+        rules.get("/say", this::say);
     }
 
     private void say(ServerRequest request, ServerResponse response) {
         accessCounter.inc();
-        String a;
-        String q = request.queryParams().first("q").orElse(null);
-        if (q == null || q.length() == 0) {
-            a = "Moo!";
-        } else {
-            a = searchAnswer(q);
-            if (a == null || a.length() == 0) {
-                a = "Moo!";
-            }
-        }
-        System.out.println(a);
-        response.send(Cowsay.say(new String[]{"-f", getRandomCowfile(), a}));
-    }
-
-    private String searchAnswer(String q) {
-        QaSearcher searcher = CowwebSearcher.getSearcher(QaSearcher.class);
-        List<Qa> qas = null;
-        try {
-            qas = searcher
-                    .fetchAllAttributes(true)
-                    .setSearchStrategy(new SpecifyIdStrategy(QaTableDefinition.getInstance(), q))
-                    .search();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        if (qas == null || qas.size() == 0) {
-            return null;
-        }
-        return qas.get(0).getA();
+        response.send(Cowsay.say(new String[]{"-f", getRandomCowfile(), "Moo!"}));
     }
 
     private static String getRandomCowfile() {

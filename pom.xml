@@ -28,7 +28,7 @@
     <name>${project.artifactId}</name>
 
     <properties>
-        <helidon.version>1.0.0</helidon.version>
+        <helidon.version>1.1.2</helidon.version>
         <package>jp.gr.java_conf.hhiroshell.cowweb</package>
         <mainClass>jp.gr.java_conf.hhiroshell.cowweb.Main</mainClass>
         <maven.compiler.source>11</maven.compiler.source>
@@ -120,11 +120,6 @@
             <groupId>com.github.ricksbrown</groupId>
             <artifactId>cowsay</artifactId>
             <version>1.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.15</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -234,9 +229,7 @@
                                     <directory>src/main/kubernetes</directory>
                                     <includes>
                                         <include>00-cowweb-namespace.yaml</include>
-                                        <include>10-cowweb-mysql-secret.yaml</include>
-                                        <include>20-cowweb-mysql.yaml</include>
-                                        <include>30-cowweb.yaml</include>
+                                        <include>10-cowweb.yaml</include>
                                     </includes>
                                 </resource>
                                 <resource>

@@ -17,7 +17,6 @@
 package jp.gr.java_conf.hhiroshell.cowweb;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.logging.LogManager;
 
 import io.helidon.config.Config;
@@ -27,9 +26,6 @@ import io.helidon.metrics.MetricsSupport;
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerConfiguration;
 import io.helidon.webserver.WebServer;
-import jp.gr.java_conf.hhiroshell.cowweb.model.CowwebDataSource;
-
-import javax.sql.DataSource;
 
 /**
  * Simple Hello World rest application.
@@ -46,7 +42,7 @@ public final class Main {
      * @param args command line arguments.
      * @throws IOException if there are problems reading logging properties
      */
-    public static void main(final String[] args) throws IOException, SQLException {
+    public static void main(final String[] args) throws IOException {
         startServer();
     }
 
@@ -55,7 +51,7 @@ public final class Main {
      * @return the created {@link WebServer} instance
      * @throws IOException if there are problems reading logging properties
      */
-    static WebServer startServer() throws IOException, SQLException {
+    static WebServer startServer() throws IOException {
 
         // load logging configuration
         LogManager.getLogManager().readConfiguration(
@@ -69,10 +65,6 @@ public final class Main {
                 ServerConfiguration.create(config.get("server"));
 
         WebServer server = WebServer.create(serverConfig, createRouting(config));
-
-        // Initialize connection pool.
-        DataSource dataSource = CowwebDataSource.getInstance();
-//        dataSource.getConnection();
 
         // Start the server and print some info.
         server.start().thenAccept(ws -> {
