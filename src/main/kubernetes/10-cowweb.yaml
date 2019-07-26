@@ -33,41 +33,59 @@ spec:
     targetPort: 8080
 ---
 kind: Deployment
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   name: ${project.artifactId}
   namespace: cowweb
 spec:
-  replicas: 4
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ${project.artifactId}
   template:
     metadata:
       labels:
         app: ${project.artifactId}
     spec:
+#      shareProcessNamespace: true
       containers:
       - name: ${project.artifactId}
         image: ${container.registry}/${container.registry.namespace}/${project.artifactId}:${project.version}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
-        env:
-          - name: DB_URL
-            valueFrom:
-              secretKeyRef:
-                name: cowweb-mysql-secret
-                key: DB_URL
-          - name: DB_PORT
-            valueFrom:
-              secretKeyRef:
-                name: cowweb-mysql-secret
-                key: DB_PORT
-          - name: DB_USER
-            valueFrom:
-              secretKeyRef:
-                name: cowweb-mysql-secret
-                key: DB_USER
-          - name: DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: cowweb-mysql-secret
-                key: DB_PASSWORD
+        - name: http
+          containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 180
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 15
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+      - name: warmup
+        image: radial/busyboxplus:curl
+        command: ['/bin/sh', '-c']
+        args: ['sleep 15; for i in `seq 0 10000`; do curl "http://localhost:8080/cowsay/say"; done; tail -f /dev/null;']
+        imagePullPolicy: IfNotPresent
+#      - name: jtoolings
+#        image: openjdk:11-jdk-slim
+#        imagePullPolicy: IfNotPresent
+#        command: ['/bin/sh']
+#        securityContext:
+#          capabilities:
+#            add:
+#              - SYS_PTRACE
+#        stdin: true
+#        tty: true
