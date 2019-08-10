@@ -52,13 +52,25 @@ public class CowsayService implements Service {
 
     @Override
     public void update(Routing.Rules rules) {
-        rules.get("/", this::say);
-        rules.get("/say", this::say);
+        rules.get("/", this::say)
+                .get("/say", this::say)
+                .get("/think", this::think);
     }
 
     private void say(ServerRequest request, ServerResponse response) {
         accessCounter.inc();
-        response.send(Cowsay.say(new String[]{"-f", getRandomCowfile(), "Moo!"}));
+        Optional<String> say = request.queryParams().first("say");
+        Optional<String> env = say.map(s -> System.getenv(s));
+        response.send(
+                Cowsay.say(new String[]{"-f", getRandomCowfile(), env.orElse(say.orElse("Moo!"))}));
+    }
+
+    private void think(ServerRequest request, ServerResponse response) {
+        accessCounter.inc();
+        Optional<String> think = request.queryParams().first("think");
+        Optional<String> env = think.map(t -> System.getenv(t));
+        response.send(
+                Cowsay.say(new String[]{"-f", getRandomCowfile(), env.orElse(think.orElse("Moo!"))}));
     }
 
     private static String getRandomCowfile() {
