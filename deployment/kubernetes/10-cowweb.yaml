@@ -17,16 +17,16 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: ${project.artifactId}
+  name: cowweb
   namespace: cowweb
   labels:
-    app: ${project.artifactId}
+    app: cowweb
   annotations:
     service.beta.kubernetes.io/oci-load-balancer-shape: 100Mbps
 spec:
   type: LoadBalancer
   selector:
-    app: ${project.artifactId}
+    app: cowweb
   ports:
   - name: "http"
     port: 80
@@ -35,22 +35,22 @@ spec:
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: ${project.artifactId}
+  name: cowweb
   namespace: cowweb
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ${project.artifactId}
+      app: cowweb
   template:
     metadata:
       labels:
-        app: ${project.artifactId}
+        app: cowweb
     spec:
 #      shareProcessNamespace: true
       containers:
-      - name: ${project.artifactId}
-        image: ${container.registry}/${container.registry.namespace}/${project.artifactId}:${project.version}
+      - name: cowweb
+        image: registry.hub.docker.com/hhayakaw/cowweb:v2.1
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

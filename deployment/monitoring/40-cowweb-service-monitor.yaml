@@ -17,16 +17,16 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: ${project.artifactId}-service-monitor
-  namespace: ${project.artifactId}
+  name: cowweb-service-monitor
+  namespace: cowweb
   labels:
-    app: ${project.artifactId}
+    app: cowweb
 spec:
   namespaceSelector:
     matchNames:
     - cowweb
   selector:
     matchLabels:
-      app: ${project.artifactId}
+      app: cowweb
   endpoints:
     - port: http
