@@ -15,7 +15,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
---><project xmlns="http://maven.apache.org/POM/4.0.0"
+-->
+    <project xmlns="http://maven.apache.org/POM/4.0.0"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
@@ -28,10 +29,10 @@
     <name>${project.artifactId}</name>
 
     <properties>
-        <helidon.version>1.1.2</helidon.version>
+        <helidon.version>1.2.0</helidon.version>
         <package>jp.gr.java_conf.hhiroshell.cowweb</package>
         <mainClass>jp.gr.java_conf.hhiroshell.cowweb.Main</mainClass>
-        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
         <libs.classpath.prefix>libs</libs.classpath.prefix>
         <copied.libs.dir>${project.build.directory}/${libs.classpath.prefix}</copied.libs.dir>
@@ -121,6 +122,7 @@
             <artifactId>cowsay</artifactId>
             <version>1.0.3</version>
         </dependency>
+        <!-- test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -130,6 +132,12 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
+        </dependency>
+        <!-- native image build -->
+        <dependency>
+            <groupId>io.helidon.integrations.graal</groupId>
+            <artifactId>helidon-graal-native-image-extension</artifactId>
+            <version>${helidon.version}</version>
         </dependency>
     </dependencies>
 
@@ -219,13 +227,6 @@
                             <resources>
                                 <resource>
                                     <filtering>true</filtering>
-                                    <directory>src/main/docker</directory>
-                                    <includes>
-                                        <include>Dockerfile</include>
-                                    </includes>
-                                </resource>
-                                <resource>
-                                    <filtering>true</filtering>
                                     <directory>src/main/kubernetes</directory>
                                     <includes>
                                         <include>00-cowweb-namespace.yaml</include>
@@ -246,5 +247,60 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native-image</id>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                    </resource>
+                    <resource>
+                        <directory>${project.build.directory}/resources</directory>
+                    </resource>
+                </resources>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <!-- extract cowsay resources from dependency jar -->
+                            <execution>
+                                <id>unpack-cowsay</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.github.ricksbrown</groupId>
+                                            <artifactId>cowsay</artifactId>
+                                            <version>1.0.3</version>
+                                            <outputDirectory>${project.build.directory}/resources</outputDirectory>
+                                            <includes>**/*.cow, **/*.csv, **/*.properties</includes>
+                                            <excludes>META-INF/*.*</excludes>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.helidon.build-tools</groupId>
+                        <artifactId>helidon-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>native-image</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
