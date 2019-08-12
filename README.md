@@ -1,6 +1,6 @@
 COWWEB2
 =======
-Cosay Web API version 2. This simple micro API server is powered by [Helidon](https://helidon.io/#/).
+Cowsay Web API version 2. This simple micro API server is powered by [Helidon](https://helidon.io/#/).
 
 ```
 $ curl "http://localhost:8080/cowsay/say?say=Hello%20cowweb"
